@@ -2,11 +2,12 @@ from django.db import models
 
 
 class Users(models.Model):
-    name = models.BigIntegerField(unique=True, blank=True, null=True) #заменить на pozitivInteger переименовать  id_name
+    name = models.BigIntegerField(unique=True, blank=True, null=True) # заменить на pozitivInteger переименовать id_name
     nickname = models.TextField('има пользователя', blank=True, null=True) # на charfield поменять
     mobile = models.IntegerField(blank=True, null=True) # на сharfield поменять
     address = models.TextField(blank=True, null=True)
-
+    delivery = models.CharField('тип доставки', max_length=15, default='🚗 Привезти')
+    time_delivery = models.CharField('время доставки',max_length=20,default='Как можно скорее')
 
     def __str__(self):
         return '{}'.format(self.nickname)
@@ -14,6 +15,17 @@ class Users(models.Model):
     class Meta:
         verbose_name = 'Пользователи'
         verbose_name_plural = 'Пользователи'
+
+
+class Orders(models.Model):
+    data = models.DateTimeField(auto_now_add=True)
+    amount_to_pay = models.PositiveIntegerField()
+    type_delivery = models.CharField('тип доставки', max_length=15)
+    address_delivery = models.CharField(max_length=100)  # null = True не забыть поставить
+    time_delivery = models.CharField(max_length=50)
+    food = models.TextField()
+    users = models.ForeignKey(Users, models.CASCADE, verbose_name='продукт юзера')
+
 
 class Basket(models.Model):
     product_id = models.CharField(max_length=250, blank=True, null=True)

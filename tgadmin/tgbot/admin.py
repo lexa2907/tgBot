@@ -2,22 +2,25 @@ from django.contrib import admin
 from .models import *
 
 
-
-
 @admin.register(Arrr)
 class MenuAdmin(admin.ModelAdmin):
     list_display = ['name']
 
 
+@admin.register(Orders)
+class UsersAdmin(admin.ModelAdmin):
+    list_display =['data', 'amount_to_pay', 'type_delivery', 'address_delivery', 'food', 'users', 'time_delivery']
+
+
 @admin.register(Users)
 class UsersAdmin(admin.ModelAdmin):
-    list_display = ['name','nickname','mobile','address']
+    list_display = ['name','nickname','mobile','address','delivery','time_delivery']
     search_fields = ('nickname',)
 
 
 @admin.register(Basket)
 class BasketAdmin(admin.ModelAdmin):
-    list_display = ['product_id', 'name_product', 'baskUser', 'count', 'id']
+    list_display = ['product_id', 'name_product', 'baskUser', 'count', 'id','price']
 
 
 @admin.register(Meni)
