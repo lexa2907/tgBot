@@ -77,8 +77,12 @@ WSGI_APPLICATION = 'tgadmin.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'testtg',
+        'USER': 'postgres',
+        'PASSWORD': '4251036aA@',
+        'HOST': '67.205.173.212',
+        'PORT': '5432',
     }
 }
 
