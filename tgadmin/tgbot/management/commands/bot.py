@@ -5,7 +5,7 @@ from telebot import apihelper
 from django.db.models import F, IntegerField
 import re
 from django.db.models import Sum
-from tgbot.models import Arrr, Category1, Meni, Users, Basket
+from tgbot.models import CategoryOne, CategoryTwo, AllMenu, Users, Basket
 
 
 class Command(BaseCommand):
@@ -15,25 +15,27 @@ class Command(BaseCommand):
         bot = telebot.TeleBot('1084734847:AAHiD4HulHbQGRmJ2U5iWqU-wJSKUCZzLNs')
         apihelper.proxy = {'https': 'socks5h://PrhZ8F:eebLU48kCY@188.130.129.144:5501'}
 
-        def newmenu(id, count, arr, nextt=0, down=0, str=1, finite_sum=0):
+        def newmenu(id_product, count, arr, forward=0, down=0, number_str=1, finite_sum=0):
             product = types.InlineKeyboardMarkup(row_width=4)
-            but_11 = types.InlineKeyboardButton(text='❌', callback_data='deleting|{}'.format(id))
+            but_11 = types.InlineKeyboardButton(text='❌', callback_data='deleting|{}'.format(id_product))
             but_12 = types.InlineKeyboardButton(text='🔺',
-                                                callback_data='add|{0}|{1}|{2}|{3}'.format(id, nextt, down, str))
+                                                callback_data='add|{0}|{1}|{2}|{3}'.format(id_product, forward,
+                                                                                           down, number_str))
             but_13 = types.InlineKeyboardButton(text='{} шт.'.format(count), callback_data='empty')
             if count == 1:
                 but_14 = types.InlineKeyboardButton(text='🔻', callback_data='empty')
             else:
                 but_14 = types.InlineKeyboardButton(text='🔻',
-                                                    callback_data='r|{0}|{1}|{2}|{3}'.format(id, nextt, down, str))
-            if nextt == 0 and down == 0:
+                                                    callback_data='r|{0}|{1}|{2}|{3}'.format(id_product, forward,
+                                                                                             down, number_str))
+            if forward == 0 and down == 0:
                 but_21 = types.InlineKeyboardButton(text='◀️', callback_data='empty')
                 but_22 = types.InlineKeyboardButton(text='1/{}'.format(arr), callback_data='empty')
                 but_23 = types.InlineKeyboardButton(text='▶️', callback_data='empty')
             else:
                 but_21 = types.InlineKeyboardButton(text='◀️', callback_data='down|{}'.format(down))
-                but_22 = types.InlineKeyboardButton(text='{}/{}'.format(str, arr), callback_data='empty')
-                but_23 = types.InlineKeyboardButton(text='▶️', callback_data='first|{}'.format(nextt))
+                but_22 = types.InlineKeyboardButton(text='{}/{}'.format(number_str, arr), callback_data='empty')
+                but_23 = types.InlineKeyboardButton(text='▶️', callback_data='first|{}'.format(forward))
             but_31 = types.InlineKeyboardButton(text=f'✅ Оформить заказ на {finite_sum} ₽',
                                                 callback_data='order_registration')
             product.add(but_11, but_12, but_13, but_14)
@@ -41,9 +43,15 @@ class Command(BaseCommand):
             product.add(but_31)
             return product
 
+        def submenu():
+            back = types.ReplyKeyboardMarkup(True, False)
+            back.row('✅ Верно')
+            back.row('🏠 Начало', '⬅️ Назад')
+            return back
+
         def menu():
             glavmenu = types.InlineKeyboardMarkup(row_width=1)
-            for i in Arrr.objects.all():
+            for i in CategoryOne.objects.all():
                 but = types.InlineKeyboardButton(text=i.name, callback_data=i.unic)
                 glavmenu.add(but)
             return glavmenu
@@ -134,22 +142,23 @@ class Command(BaseCommand):
                 p = Users.objects.get(name=message.chat.id)
                 arr = p.basket_set.count()
                 if arr > 0:
-                    tovar = p.basket_set.all()[0]
-                    sum = tovar.count * tovar.price
+                    object_menu = p.basket_set.all()[0]
+                    sum = object_menu.count * object_menu.price
                     final_sum = p.basket_set.aggregate(sum=Sum(F('count') * F('price'), output_field=IntegerField()))
                     if arr > 1:
                         arr_id = p.basket_set.values_list('id', flat=True)
                         bot.send_message(message.chat.id,
-                                         text=f'{tovar.name_product}[.]({tovar.photo})\n'
-                                              f' {tovar.count}шт [*] {tovar.price} ₽ = {sum} ₽ ',
-                                         reply_markup=newmenu(tovar.id, tovar.count, arr, nextt=arr_id[1],
+                                         text=f'{object_menu.name_product}[.]({object_menu.photo})\n'
+                                              f' {object_menu.count}шт [*] {object_menu.price} ₽ = {sum} ₽ ',
+                                         reply_markup=newmenu(object_menu.id, object_menu.count, arr, forward=arr_id[1],
                                                               down=arr_id[arr - 1], finite_sum=final_sum['sum']),
                                          parse_mode='markdown')
                     else:
                         bot.send_message(message.chat.id,
-                                         text=f'{tovar.name_product}[.]({tovar.photo})\n'
-                                              f' {tovar.count}шт [*] {tovar.price} ₽ = {sum} ₽ ',
-                                         reply_markup=newmenu(tovar.id, tovar.count, arr,finite_sum=final_sum['sum']),
+                                         text=f'{object_menu.name_product}[.]({object_menu.photo})\n'
+                                              f' {object_menu.count}шт [*] {object_menu.price} ₽ = {sum} ₽ ',
+                                         reply_markup=newmenu(object_menu.id, object_menu.count, arr,
+                                                              finite_sum=final_sum['sum']),
                                          parse_mode='markdown')
                 else:
 
@@ -217,7 +226,6 @@ class Command(BaseCommand):
                 bot.send_message(message.chat.id, 'Адрес успешно изменен')
                 bot.send_message(message.chat.id, 'Выберите настройки,которые хотите поменять', reply_markup=back)
 
-
         def number_processing(message):
             if message.text == '🏠 Начало':
                 startpg(message)
@@ -256,83 +264,85 @@ class Command(BaseCommand):
             print(c.data)
             # Выводим категорию2
             p = Users.objects.get(name=c.message.chat.id)
-            if Arrr.objects.filter(unic=c.data).exists():
-                yaponmenu = types.InlineKeyboardMarkup()
-                rr = Arrr.objects.get(unic=c.data)
-                count = rr.category1_set.count()
-                arr = rr.category1_set.all()
+            if CategoryOne.objects.filter(unic=c.data).exists():
+                menu_two = types.InlineKeyboardMarkup()
+                rr = CategoryOne.objects.get(unic=c.data)
+                count = rr.categorytwo_set.count()
+                arr = rr.categorytwo_set.all()
                 if count % 2 == 0:
                     for i in range(0, count, 2):
-                        but_1 = types.InlineKeyboardButton(text=arr[i].name, callback_data=arr[i].unicс)
-                        but_2 = types.InlineKeyboardButton(text=arr[i + 1].name, callback_data=arr[i + 1].unicс)
-                        yaponmenu.add(but_1, but_2)
+                        but_1 = types.InlineKeyboardButton(text=arr[i].name, callback_data=arr[i].unic)
+                        but_2 = types.InlineKeyboardButton(text=arr[i + 1].name, callback_data=arr[i + 1].unic)
+                        menu_two.add(but_1, but_2)
                 else:
-                    but_0 = types.InlineKeyboardButton(text=arr[0].name, callback_data=arr[0].unicс)
-                    yaponmenu.add(but_0)
+                    but_0 = types.InlineKeyboardButton(text=arr[0].name, callback_data=arr[0].unic)
+                    menu_two.add(but_0)
                     for i in range(1, count, 2):
-                        but_1 = types.InlineKeyboardButton(text=arr[i].name, callback_data=arr[i].unicс)
-                        but_2 = types.InlineKeyboardButton(text=arr[i + 1].name, callback_data=arr[i + 1].unicс)
-                        yaponmenu.add(but_1, but_2)
-                but_nazad = types.InlineKeyboardButton(text='В начало меню', callback_data='vnachalo')
-                yaponmenu.add(but_nazad)
+                        but_1 = types.InlineKeyboardButton(text=arr[i].name, callback_data=arr[i].unic)
+                        but_2 = types.InlineKeyboardButton(text=arr[i + 1].name, callback_data=arr[i + 1].unic)
+                        menu_two.add(but_1, but_2)
+                but_down = types.InlineKeyboardButton(text='В начало меню', callback_data='vnachalo')
+                menu_two.add(but_down)
                 bot.edit_message_reply_markup(chat_id=c.message.chat.id, message_id=c.message.message_id,
-                                              reply_markup=yaponmenu)
+                                              reply_markup=menu_two)
             elif c.data == 'empty':
                 bot.answer_callback_query(c.id, text="")
             # выводим меню по ключу и добавляем статическием кнопки
-            elif Category1.objects.filter(unicс=c.data).exists():
-                rr = Category1.objects.get(unicс=c.data)
-                gunkani1 = types.ReplyKeyboardMarkup(True, False)
-                gunkani1.row('🏠', '🍴', '🛍')
-                bot.send_message(c.message.chat.id, rr.name, reply_markup=gunkani1)
+            elif CategoryTwo.objects.filter(unic=c.data).exists():
+                rr = CategoryTwo.objects.get(unic=c.data)
+                menu_three = types.ReplyKeyboardMarkup(True, False)
+                menu_three.row('🏠', '🍴', '🛍')
+                bot.send_message(c.message.chat.id, rr.name, reply_markup=menu_three)
                 bot.answer_callback_query(c.id, text="")
-                for i in rr.meni_set.all():
-                    gunkani11 = types.InlineKeyboardMarkup()
+                for i in rr.allmenu_set.all():
+                    menu_category = types.InlineKeyboardMarkup()
                     but_11 = types.InlineKeyboardButton(text='1шт-{}₽'.format(i.price),
                                                         callback_data=i.unic)
-                    gunkani11.add(but_11)
+                    menu_category.add(but_11)
                     bot.send_photo(c.message.chat.id, i.photo,
                                    caption="{}\n{}\nВес: {}г".format(i.name, i.structure, i.weight),
-                                   reply_markup=gunkani11)
+                                   reply_markup=menu_category)
 
             # Обрабатываем нажатый товар ,добавляем его в корзину и добавляем инлай кнопку корзины
 
-            elif Meni.objects.filter(unic=c.data).exists():
+            elif AllMenu.objects.filter(unic=c.data).exists():
                 if p.basket_set.filter(product_id=c.data).exists():
                     p.basket_set.filter(product_id=c.data).update(count=F('count') + 1)
                 else:
-                    obekt = Meni.objects.get(unic=c.data)
-                    nama, _ = Basket.objects.get_or_create(
-                        product_id=c.data, count=1, baskUser=p, name_product=obekt.name, photo=obekt.photo,
-                        weight=obekt.weight, price=obekt.price)
-                gunkani333 = types.InlineKeyboardMarkup()
-                price = Meni.objects.get(unic=c.data).price
+                    object_menu = AllMenu.objects.get(unic=c.data)
+                    basket, _ = Basket.objects.get_or_create(
+                        product_id=c.data, count=1, baskUser=p, name_product=object_menu.name, photo=object_menu.photo,
+                        weight=object_menu.weight, price=object_menu.price)
+                object_product = types.InlineKeyboardMarkup()
+                price = AllMenu.objects.get(unic=c.data).price
                 but_11 = types.InlineKeyboardButton(text='{}₽({}шт.)'.format(price,
                                                                              p.basket_set.get(product_id=c.data).count),
                                                     callback_data=c.data)
                 but_12 = types.InlineKeyboardButton(text='🛍 Корзина', callback_data="Korzina")
-                gunkani333.add(but_11)
-                gunkani333.add(but_12)
+                object_product.add(but_11)
+                object_product.add(but_12)
                 bot.edit_message_reply_markup(chat_id=c.message.chat.id, message_id=c.message.message_id,
-                                              reply_markup=gunkani333)
+                                              reply_markup=object_product)
             elif c.data == 'Korzina':
                 arr = p.basket_set.count()
                 if arr > 0:
                     final_sum = p.basket_set.aggregate(sum=Sum(F('count') * F('price'), output_field=IntegerField()))
-                    tovar = p.basket_set.all()[0]
-                    sum = tovar.count * tovar.price
+                    object_menu = p.basket_set.all()[0]
+                    sum = object_menu.count * object_menu.price
                     if arr > 1:
                         arr_id = p.basket_set.values_list('id', flat=True)
                         bot.send_message(c.message.chat.id,
-                                         text=f'{tovar.name_product}[.]({tovar.photo})\n'
-                                              f' {tovar.count}шт [*] {tovar.price} ₽ = {sum} ₽ ',
-                                         reply_markup=newmenu(tovar.id, tovar.count, arr, nextt=arr_id[1],
+                                         text=f'{object_menu.name_product}[.]({object_menu.photo})\n'
+                                              f' {object_menu.count}шт [*] {object_menu.price} ₽ = {sum} ₽ ',
+                                         reply_markup=newmenu(object_menu.id, object_menu.count, arr, forward=arr_id[1],
                                                               down=arr_id[arr - 1], finite_sum=final_sum['sum']),
                                          parse_mode='markdown')
                     else:
-                        bot.send_message(c.message.chat.id, text=f'{tovar.name_product}[.]({tovar.photo})'
-                                                                 f' {tovar.count}шт [*] {tovar.price} ₽ = {sum} ₽ ',
-                                         reply_markup=newmenu(tovar.id, tovar.count, arr, finite_sum=final_sum['sum']),
+                        bot.send_message(c.message.chat.id, text=f'{object_menu.name_product}[.]({object_menu.photo})'
+                                                                 f' {object_menu.count}шт [*] '
+                                                                 f'{object_menu.price} ₽ = {sum} ₽ ',
+                                         reply_markup=newmenu(object_menu.id, object_menu.count,
+                                                              arr, finite_sum=final_sum['sum']),
                                          parse_mode='markdown')
                 else:
 
@@ -344,22 +354,22 @@ class Command(BaseCommand):
                 try:
                     p.basket_set.get(id=c.data.split('|')[1]).delete()
                     arr = p.basket_set.count()
-                    nextt = 0
+                    forward = 0
                     down = 0
                     if arr > 0:
-                        tovar = p.basket_set.all()[0]
-                        sum = tovar.count * tovar.price
+                        object_menu = p.basket_set.all()[0]
+                        sum = object_menu.count * object_menu.price
                         final_sum = p.basket_set.aggregate(sum=Sum(F('count') * F('price'),
                                                            output_field=IntegerField()))
                         if arr > 1:
                             arr_id = p.basket_set.values_list('id', flat=True)
-                            nextt = arr_id[1]
+                            forward = arr_id[1]
                             down = arr_id[arr - 1]
-                        bot.edit_message_text(text=f'{tovar.name_product}[.]({tovar.photo})\n'
-                                                   f' {tovar.count}шт [*] {tovar.price} ₽ = {sum} ₽ ',
+                        bot.edit_message_text(text=f'{object_menu.name_product}[.]({object_menu.photo})\n'
+                                                   f' {object_menu.count}шт [*] {object_menu.price} ₽ = {sum} ₽ ',
                                               chat_id=c.message.chat.id, message_id=c.message.message_id,
-                                              reply_markup=newmenu(tovar.id, tovar.count, arr,
-                                                                   nextt, down, finite_sum=final_sum['sum']),
+                                              reply_markup=newmenu(object_menu.id, object_menu.count, arr,
+                                                                   forward, down, finite_sum=final_sum['sum']),
                                               parse_mode='markdown')
                     else:
                         bot.answer_callback_query(c.id, text="")
@@ -376,14 +386,14 @@ class Command(BaseCommand):
                     bot.answer_callback_query(c.id, text="")
                 else:
                     p.basket_set.filter(id=c.data.split('|')[1]).update(count=F('count') + 1)
-                    tovar = p.basket_set.get(id=c.data.split('|')[1])
-                    sum = tovar.count * tovar.price
+                    object_menu = p.basket_set.get(id=c.data.split('|')[1])
+                    sum = object_menu.count * object_menu.price
                     final_sum = p.basket_set.aggregate(sum=Sum(F('count') * F('price'),
                                                                output_field=IntegerField()))
                     bot.edit_message_text(chat_id=c.message.chat.id,message_id=c.message.message_id,
-                                          text=f'{tovar.name_product}[.]({tovar.photo})\n'
-                                               f' {tovar.count}шт [*] {tovar.price} ₽ = {sum} ₽ ',
-                                          reply_markup=newmenu(tovar.id, tovar.count, arr,
+                                          text=f'{object_menu.name_product}[.]({object_menu.photo})\n'
+                                               f' {object_menu.count}шт [*] {object_menu.price} ₽ = {sum} ₽ ',
+                                          reply_markup=newmenu(object_menu.id, object_menu.count, arr,
                                                                int(c.data.split('|')[2]),
                                                                int(c.data.split('|')[3]),
                                                                int(c.data.split('|')[4]),
@@ -393,12 +403,11 @@ class Command(BaseCommand):
             elif c.data.split('|')[0] == 'r':
                 try:
                     arr = p.basket_set.count()
-                    tovar = p.basket_set.get(id=c.data.split('|')[1])
-                    print(tovar.count)
+                    object_menu = p.basket_set.get(id=c.data.split('|')[1])
                     product = types.InlineKeyboardMarkup(row_width=4)
-                    but_11 = types.InlineKeyboardButton(text='❌', callback_data='deleting|{}'.format(tovar.id))
+                    but_11 = types.InlineKeyboardButton(text='❌', callback_data='deleting|{}'.format(object_menu.id))
                     but_12 = types.InlineKeyboardButton(text='🔺',
-                                                        callback_data='add|{0}|{1}|{2}|{3}'.format(tovar.id,
+                                                        callback_data='add|{0}|{1}|{2}|{3}'.format(object_menu.id,
                                                                                                    int(c.data.split(
                                                                                                        '|')[
                                                                                                            2]),
@@ -408,18 +417,19 @@ class Command(BaseCommand):
                                                                                                    int(c.data.split(
                                                                                                        '|')[
                                                                                                            4])))
-                    if tovar.count == 1:
+                    if object_menu.count == 1:
                         count = 1
-                        but_13 = types.InlineKeyboardButton(text='{} шт.'.format(tovar.count), callback_data='empty')
+                        but_13 = types.InlineKeyboardButton(text='{} шт.'.format(object_menu.count),
+                                                            callback_data='empty')
                         but_14 = types.InlineKeyboardButton(text='🔻', callback_data='empty')
 
                     else:
                         p.basket_set.filter(id=c.data.split('|')[1]).update(count=F('count') - 1)
-                        count = tovar.count - 1
-                        but_13 = types.InlineKeyboardButton(text='{} шт.'.format(tovar.count - 1),
+                        count = object_menu.count - 1
+                        but_13 = types.InlineKeyboardButton(text='{} шт.'.format(object_menu.count - 1),
                                                             callback_data='empty')
                         but_14 = types.InlineKeyboardButton(text='🔻',
-                                                            callback_data='r|{0}|{1}|{2}|{3}'.format(tovar.id,
+                                                            callback_data='r|{0}|{1}|{2}|{3}'.format(object_menu.id,
                                                                                                      c.data.split('|')[
                                                                                                          2],
                                                                                                      c.data.split('|')[
@@ -444,10 +454,10 @@ class Command(BaseCommand):
                     product.add(but_11, but_12, but_13, but_14)
                     product.add(but_21, but_22, but_23)
                     product.add(but_31)
-                    sum = count * tovar.price
+                    sum = count * object_menu.price
                     bot.edit_message_text(chat_id=c.message.chat.id, message_id=c.message.message_id,
-                                          text=f'{tovar.name_product}[.]({tovar.photo})\n'
-                                               f' {count}шт [*] {tovar.price} ₽ = {sum} ₽ ',
+                                          text=f'{object_menu.name_product}[.]({object_menu.photo})\n'
+                                               f' {count}шт [*] {object_menu.price} ₽ = {sum} ₽ ',
                                           reply_markup=product,
                                           parse_mode='markdown')
                 except:
@@ -455,66 +465,66 @@ class Command(BaseCommand):
 
             elif c.data.split('|')[0] == 'down':
                 try:
-                    tovar = p.basket_set.get(id=c.data.split('|')[1])
+                    object_menu = p.basket_set.get(id=c.data.split('|')[1])
                     arr = p.basket_set.count()
                     arr_id = p.basket_set.values_list('id', flat=True)
-                    sum = tovar.count * tovar.price
+                    sum = object_menu.count * object_menu.price
                     final_sum = p.basket_set.aggregate(sum=Sum(F('count') * F('price'), output_field=IntegerField()))
-                    if tovar.id == arr_id[0]:
-                        nextt = arr_id[1]
-                        str = 1
+                    if object_menu.id == arr_id[0]:
+                        forward = arr_id[1]
+                        number_str = 1
                         down = arr_id[arr - 1]
 
-                    elif tovar.id == arr_id[arr - 1]:
-                        nextt = arr_id[0]
-                        str = arr
+                    elif object_menu.id == arr_id[arr - 1]:
+                        forward = arr_id[0]
+                        number_str = arr
                         down = arr_id[arr - 2]
 
                     else:
                         for i in range(1, arr):
-                            if tovar.id == arr_id[i]:
-                                nextt = arr_id[i + 1]
-                                str = i + 1
+                            if object_menu.id == arr_id[i]:
+                                forward = arr_id[i + 1]
+                                number_str = i + 1
                                 down = arr_id[i - 1]
 
-                    bot.edit_message_text(text=f'{tovar.name_product}[.]({tovar.photo})\n'
-                                               f' {tovar.count}шт [*] {tovar.price} ₽ = {sum} ₽ ',
+                    bot.edit_message_text(text=f'{object_menu.name_product}[.]({object_menu.photo})\n'
+                                               f' {object_menu.count}шт [*] {object_menu.price} ₽ = {sum} ₽ ',
                                           chat_id=c.message.chat.id, message_id=c.message.message_id,
-                                          reply_markup=newmenu(tovar.id, tovar.count,
-                                                               arr, nextt, down, str, finite_sum=final_sum['sum']),
+                                          reply_markup=newmenu(object_menu.id, object_menu.count,
+                                                               arr, forward, down, number_str,
+                                                               finite_sum=final_sum['sum']),
                                           parse_mode='markdown')
                 except:
                     bot.answer_callback_query(c.id, text="")
             elif c.data.split('|')[0] == 'first':
                 try:
-                    tovar = p.basket_set.get(id=c.data.split('|')[1])
+                    object_menu = p.basket_set.get(id=c.data.split('|')[1])
                     arr = p.basket_set.count()
                     arr_id = p.basket_set.values_list('id', flat=True)
-                    str = 1
+                    number_str = 1
 
-                    sum = tovar.count * tovar.price
+                    sum = object_menu.count * object_menu.price
                     final_sum = p.basket_set.aggregate(sum=Sum(F('count') * F('price'),
                                                                output_field=IntegerField()))
-                    if tovar.id == arr_id[arr - 1]:
-                        str = arr
-                        nextt = arr_id[0]
+                    if object_menu.id == arr_id[arr - 1]:
+                        number_str = arr
+                        forward = arr_id[0]
                         down = arr_id[arr - 2]
 
-                    elif tovar.id == arr_id[0]:
-                        nextt = arr_id[1]
+                    elif object_menu.id == arr_id[0]:
+                        forward = arr_id[1]
                         down = arr_id[arr - 1]
                     else:
                         for i in range(0, arr):
-                            if arr_id[i] == tovar.id:
-                                nextt = arr_id[i + 1]
-                                str = i + 1
+                            if arr_id[i] == object_menu.id:
+                                forward = arr_id[i + 1]
+                                number_str = i + 1
                                 down = arr_id[i - 1]
-                    bot.edit_message_text(text=f'{tovar.name_product}[.]({tovar.photo})\n'
-                                               f' {tovar.count}шт [*] {tovar.price} ₽ = {sum} ₽ ',
+                    bot.edit_message_text(text=f'{object_menu.name_product}[.]({object_menu.photo})\n'
+                                               f' {object_menu.count}шт [*] {object_menu.price} ₽ = {sum} ₽ ',
                                           chat_id=c.message.chat.id, message_id=c.message.message_id,
-                                          reply_markup=newmenu(tovar.id, tovar.count,
-                                                               arr, nextt=nextt, down=down,
-                                                               str=str, finite_sum=final_sum['sum']),
+                                          reply_markup=newmenu(object_menu.id, object_menu.count,
+                                                               arr, forward, down, number_str, final_sum['sum']),
                                           parse_mode='markdown')
                 except:
                     bot.answer_callback_query(c.id, text="")
@@ -552,7 +562,6 @@ class Command(BaseCommand):
                                                f'Блюда: \n{object_one.food}',
                                           reply_markup=product, parse_mode='markdown')
                 except:
-                    print('lol')
                     bot.answer_callback_query(c.id, text="")
 
             elif c.data == 'order_registration':
@@ -579,27 +588,21 @@ class Command(BaseCommand):
             if message.text == '🏠 Начало':
                 startpg(message)
             elif message.text == '✅ Верно':
-                back = types.ReplyKeyboardMarkup(True, False)
-                back.row('✅ Верно')
-                back.row('🏠 Начало', '⬅️ Назад')
                 p = Users.objects.get(name=message.chat.id)
                 bot.send_message(chat_id=message.chat.id, text=f'{p.delivery} \n Стоимость - 0 ₽')
                 time_delivery = bot.send_message(chat_id=message.chat.id,
                                                  text=f'Укажите время доставки:\n Сейчас: {p.time_delivery}',
-                                                 reply_markup=back)
+                                                 reply_markup=submenu())
                 bot.register_next_step_handler(time_delivery, processing_delivery)
             elif message.text == '🏃 Заберу сам' or message.text == '🚗 Привезти':
                 p = Users.objects.get(name=message.chat.id)
                 p.delivery = message.text
                 p.save()
-                back = types.ReplyKeyboardMarkup(True, False)
-                back.row('✅ Верно')
-                back.row('🏠 Начало', '⬅️ Назад')
                 bot.send_message(chat_id=message.chat.id, text=f'{message.text} \n Стоимость - 0 ₽')
                 time_delivery = bot.send_message(chat_id=message.chat.id,
                                                  text='Укажите время доставки в формате(12:30)\n'
                                                       ' Сейчас: как можно скорее',
-                                                 reply_markup=back)
+                                                 reply_markup=submenu())
                 bot.register_next_step_handler(time_delivery, processing_delivery)
             else:
                 back = types.ReplyKeyboardMarkup(True, False)
@@ -614,12 +617,9 @@ class Command(BaseCommand):
         def processing_delivery(message):
             p = Users.objects.get(name=message.chat.id)
             if message.text == '✅ Верно':
-                back = types.ReplyKeyboardMarkup(True, False)
-                back.row('✅ Верно')
-                back.row('🏠 Начало', '⬅️ Назад')
                 new_name = bot.send_message(chat_id=message.chat.id,
                                             text=f'Укажите ваше имя:\n Сейчас:{p.nickname}',
-                                            reply_markup=back)
+                                            reply_markup=submenu())
                 bot.register_next_step_handler(new_name, name_processing)
 
             elif message.text == '⬅️ Назад':
@@ -645,54 +645,44 @@ class Command(BaseCommand):
                 else:
                     p.time_delivery = new_time.group(0)
                     p.save()
-                    back = types.ReplyKeyboardMarkup(True, False)
-                    back.row('✅ Верно')
-                    back.row('🏠 Начало', '⬅️ Назад')
                     new_name = bot.send_message(chat_id=message.chat.id,
                                                 text=f'Укажите ваше имя:\n Сейчас:{p.nickname}',
-                                                reply_markup=back)
+                                                reply_markup=submenu())
                     bot.register_next_step_handler(new_name, name_processing)
 
         def name_processing(message):
             p = Users.objects.get(name=message.chat.id)
             if message.text == '✅ Верно':
-                back = types.ReplyKeyboardMarkup(True, False)
                 if p.mobile is None:
+                    back = types.ReplyKeyboardMarkup(True, False)
                     back.row('🏠 Начало', '⬅️ Назад')
                     new_number = bot.send_message(chat_id=message.chat.id,
                                                   text=f'Укажите ваш мобильный телефон:\n Сейчас:не указан',
                                                   reply_markup=back)
                     bot.register_next_step_handler(new_number, phone_number)
                 else:
-                    back.row('✅ Верно')
-                    back.row('🏠 Начало', '⬅️ Назад')
                     new_number = bot.send_message(chat_id=message.chat.id,
                                                   text=f'Укажите ваш мобильный телефон:\n Сейчас:{p.mobile}',
-                                                  reply_markup=back)
+                                                  reply_markup=submenu())
                     bot.register_next_step_handler(new_number, phone_number)
             elif message.text == '⬅️ Назад':
-                back = types.ReplyKeyboardMarkup(True, False)
-                back.row('✅ Верно')
-                back.row('🏠 Начало', '⬅️ Назад')
                 time_delivery = bot.send_message(chat_id=message.chat.id,
                                                  text=f'Укажите время доставки в формате(12:30)\n'
                                                       f' Сейчас: {p.time_delivery}',
-                                                 reply_markup=back)
+                                                 reply_markup=submenu())
                 bot.register_next_step_handler(time_delivery, processing_delivery)
             elif message.text == '🏠 Начало':
                 startpg(message)
             elif message.text.isalpha():
                 p.nickname = message.text
                 p.save()
-                back = types.ReplyKeyboardMarkup(True, False)
                 if p.mobile is not None:
-                    back.row('✅ Верно')
-                    back.row('🏠 Начало', '⬅️ Назад')
                     new_number = bot.send_message(chat_id=message.chat.id,
                                                   text=f'Укажите ваш мобильный телефон:\n Сейчас:{p.mobile}',
-                                                  reply_markup=back)
+                                                  reply_markup=submenu())
                     bot.register_next_step_handler(new_number, phone_number)
                 else:
+                    back = types.ReplyKeyboardMarkup(True, False)
                     back.row('🏠 Начало', '⬅️ Назад')
                     new_number = bot.send_message(chat_id=message.chat.id,
                                                   text=f'Укажите ваш мобильный телефон:\n Сейчас:не указан',
@@ -707,8 +697,8 @@ class Command(BaseCommand):
             p = Users.objects.get(name=message.chat.id)
             if message.text == '✅ Верно':
                 if p.delivery == '🚗 Привезти':  # сделать для заберу сам
-                    back = types.ReplyKeyboardMarkup(True, False)
                     if p.address == "" or p.address is None:
+                        back = types.ReplyKeyboardMarkup(True, False)
                         back.row('🏠 Начало', '⬅️ Назад')
                         new_address = bot.send_message(chat_id=message.chat.id,
                                                        text=f'Укажите адрес доставки \n'
@@ -716,13 +706,11 @@ class Command(BaseCommand):
                                                             f' Сейчас:не указан',
                                                        reply_markup=back)
                     else:
-                        back.row('✅ Верно')
-                        back.row('🏠 Начало', '⬅️ Назад')
                         new_address = bot.send_message(chat_id=message.chat.id,
                                                        text=f'Укажите адрес доставки \n'
                                                             f' Улицу, дом, подъезд, квартиру и этаж:\n'
                                                             f' Сейчас:{p.address}',
-                                                       reply_markup=back)
+                                                       reply_markup=submenu())
                     bot.register_next_step_handler(new_address, address_processing)
                 else:
                     final_sum = p.basket_set.aggregate(sum=Sum(F('count') * F('price'),
@@ -733,16 +721,13 @@ class Command(BaseCommand):
                     ordering = bot.send_message(message.chat.id, f' *Данные заказа*: \nСумма заказа: {final_sum["sum"]} \n'
                                                                  f'Покупатель: {p.nickname} \nТелефон: {p.mobile} \n'
                                                                  f'Доставка: {p.delivery}',
-                                                reply_markup=back,parse_mode='markdown')
+                                                reply_markup=back, parse_mode='markdown')
                     bot.register_next_step_handler(ordering, ordering_process)
 
             elif message.text == '⬅️ Назад':
-                back = types.ReplyKeyboardMarkup(True, False)
-                back.row('✅ Верно')
-                back.row('🏠 Начало', '⬅️ Назад')
                 new_name = bot.send_message(chat_id=message.chat.id,
                                             text=f'Укажите ваше имя:\n Сейчас:{p.nickname}',
-                                            reply_markup=back)
+                                            reply_markup=submenu())
                 bot.register_next_step_handler(new_name, name_processing)
 
             elif message.text == '🏠 Начало':
@@ -751,9 +736,9 @@ class Command(BaseCommand):
             elif message.text.isdigit() and len(message.text) == 11 and message.text[0] == '7':
                 p.mobile = message.text
                 p.save()
-                back = types.ReplyKeyboardMarkup(True, False)
                 if p.delivery == '🚗 Привезти':
                     if p.address == '' or p.address is None:
+                        back = types.ReplyKeyboardMarkup(True, False)
                         back.row('🏠 Начало', '⬅️ Назад')
                         new_address = bot.send_message(chat_id=message.chat.id,
                                                        text=f'Укажите адрес доставки \n'
@@ -761,13 +746,11 @@ class Command(BaseCommand):
                                                             f'Сейчас:не указан',
                                                        reply_markup=back)
                     else:
-                        back.row('✅ Верно')
-                        back.row('🏠 Начало', '⬅️ Назад')
                         new_address = bot.send_message(chat_id=message.chat.id,
                                                        text=f'Укажите адрес доставки \n'
                                                             f' Улицу, дом, подъезд, квартиру и этаж:\n'
                                                             f' Сейчас:{p.address}',
-                                                       reply_markup=back)
+                                                       reply_markup=submenu())
 
                     bot.register_next_step_handler(new_address, address_processing)
                 else:
@@ -800,25 +783,19 @@ class Command(BaseCommand):
                                             reply_markup=back, parse_mode='markdown')
                 bot.register_next_step_handler(ordering, ordering_process)
             elif message.text == '⬅️ Назад':
-                back = types.ReplyKeyboardMarkup(True, False)
-                back.row('✅ Верно')
-                back.row('🏠 Начало', '⬅️ Назад')
                 new_number = bot.send_message(chat_id=message.chat.id,
                                               text=f'Укажите ваш мобильный телефон:\n Сейчас:{p.mobile}',
-                                              reply_markup=back)
+                                              reply_markup=submenu())
                 bot.register_next_step_handler(new_number, phone_number)
 
             elif message.text == '🏠 Начало':
                 startpg(message)
             elif message.text[0] == "\'" or message.text.isdigit():
-                back = types.ReplyKeyboardMarkup(True, False)
-                back.row('✅ Верно')
-                back.row('🏠 Начало', '⬅️ Назад')
                 new_address = bot.send_message(chat_id=message.chat.id,
                                                text=f'Укажите корректно адрес доставки \n'
                                                     f' Улицу, дом, подъезд, квартиру и этаж:\n'
                                                     f' Сейчас:{p.address}',
-                                               reply_markup=back)
+                                               reply_markup=submenu())
 
                 bot.register_next_step_handler(new_address, address_processing)
             else:
@@ -832,7 +809,7 @@ class Command(BaseCommand):
                 bot.send_message(message.chat.id, f'*Данные заказа:* \nСумма заказа: {final_sum["sum"]}₽ \n'
                                                   f'Покупатель: {p.nickname} \nТелефон: {p.mobile} \n'
                                                   f'Доставка: {p.delivery} \nАдрес: {p.address} \n',
-                                 reply_markup=back, parse_mode='markdown' )
+                                 reply_markup=back, parse_mode='markdown')
 
         def ordering_process(message):
             p = Users.objects.get(name=message.chat.id)
@@ -844,29 +821,23 @@ class Command(BaseCommand):
                 for i in basket:
                     sum_food = i.count * i.price
                     foods += '{} - {}шт. = {} ₽ \n'.format(i.name_product, i.count, sum_food)
-                    print(foods)
                 p.orders_set.create(amount_to_pay=final_sum['sum'], type_delivery=p.delivery,
                                     address_delivery=p.address, food=foods, time_delivery=p.time_delivery)
                 p.basket_set.all().delete()
+                print(type(message.chat.id))
                 bot.send_message(message.chat.id, 'Главное меню', reply_markup=startmenu())
             elif message.text == '⬅️ Назад':
                 if p.delivery == '🚗 Привезти':
-                    back = types.ReplyKeyboardMarkup(True, False)
-                    back.row('✅ Верно')
-                    back.row('🏠 Начало', '⬅️ Назад')
                     new_address = bot.send_message(chat_id=message.chat.id,
                                                    text=f'Укажите адрес доставки \n'
                                                         f' Улицу, дом, подъезд, квартиру и этаж:\n'
                                                         f' Сейчас:{p.address}',
-                                                   reply_markup=back)
+                                                   reply_markup=submenu())
                     bot.register_next_step_handler(new_address, address_processing)
                 else:
-                    back = types.ReplyKeyboardMarkup(True, False)
-                    back.row('✅ Верно')
-                    back.row('🏠 Начало', '⬅️ Назад')
                     new_number = bot.send_message(chat_id=message.chat.id,
                                                   text=f'Укажите ваш мобильный телефон:\n Сейчас:{p.mobile}',
-                                                  reply_markup=back)
+                                                  reply_markup=submenu())
                     bot.register_next_step_handler(new_number, phone_number)
 
             elif message.text == '🏠 Начало':
