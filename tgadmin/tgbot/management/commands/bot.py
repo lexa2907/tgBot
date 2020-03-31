@@ -6,13 +6,13 @@ from django.db.models import F, IntegerField
 import re
 from django.db.models import Sum
 from tgbot.models import CategoryOne, CategoryTwo, AllMenu, Users, Basket
-
+from tgadmin.settings import BOT
 
 class Command(BaseCommand):
     help = "ТЕлеграмм бот"
 
     def handle(self, *args, **options):
-        bot = telebot.TeleBot('1084734847:AAHiD4HulHbQGRmJ2U5iWqU-wJSKUCZzLNs')
+        bot = telebot.TeleBot(BOT)
         apihelper.proxy = {'https': 'socks5h://PrhZ8F:eebLU48kCY@188.130.129.144:5501'}
 
         def newmenu(id_product, count, arr, forward=0, down=0, number_str=1, finite_sum=0):
@@ -52,7 +52,7 @@ class Command(BaseCommand):
         def menu():
             glavmenu = types.InlineKeyboardMarkup(row_width=1)
             for i in CategoryOne.objects.all():
-                but = types.InlineKeyboardButton(text=i.name, callback_data=i.unic)
+                but = types.InlineKeyboardButton(text=i.name, callback_data=f'm1|{i.id}')
                 glavmenu.add(but)
             return glavmenu
 
@@ -120,8 +120,9 @@ class Command(BaseCommand):
                         but_23 = types.InlineKeyboardButton(text='▶️', callback_data=f'tn|{arr_id[1]}')
                         product.add(but_21, but_22, but_23)
                     bot.send_message(message.chat.id, text='Заказы:', reply_markup=back)
+                    date_time = object_one.data.strftime("%d-%m-%Y %H:%M")
                     if object_one.type_delivery == '🚗 Привезти':
-                        bot.send_message(message.chat.id, text=f'Дата: {object_one.data} \n'
+                        bot.send_message(message.chat.id, text=f'Дата: {date_time} \n'
                                                                f'Сумма: {object_one.amount_to_pay} ₽ \n'
                                                                f'Доставка: {object_one.type_delivery} '
                                                                f' {object_one.time_delivery} \n'
@@ -129,7 +130,7 @@ class Command(BaseCommand):
                                                                f'Блюда: \n{object_one.food}',
                                          reply_markup=product, parse_mode='markdown')
                     else:
-                        bot.send_message(message.chat.id, text=f'Дата: {object_one.data} \n'
+                        bot.send_message(message.chat.id, text=f'Дата: {date_time} \n'
                                                                f'Сумма: {object_one.amount_to_pay} ₽ \n'
                                                                f'Доставка: {object_one.type_delivery} '
                                                                f' {object_one.time_delivery} \n \n'
@@ -149,7 +150,7 @@ class Command(BaseCommand):
                         arr_id = p.basket_set.values_list('id', flat=True)
                         bot.send_message(message.chat.id,
                                          text=f'{object_menu.name_product}[.]({object_menu.photo})\n'
-                                              f' {object_menu.count}шт [*] {object_menu.price} ₽ = {sum} ₽ ',
+                                              f'{object_menu.count}шт [*] {object_menu.price} ₽ = {sum} ₽ ',
                                          reply_markup=newmenu(object_menu.id, object_menu.count, arr, forward=arr_id[1],
                                                               down=arr_id[arr - 1], finite_sum=final_sum['sum']),
                                          parse_mode='markdown')
@@ -264,22 +265,22 @@ class Command(BaseCommand):
             print(c.data)
             # Выводим категорию2
             p = Users.objects.get(name=c.message.chat.id)
-            if CategoryOne.objects.filter(unic=c.data).exists():
+            if c.data.split('|')[0] == 'm1':
                 menu_two = types.InlineKeyboardMarkup()
-                rr = CategoryOne.objects.get(unic=c.data)
+                rr = CategoryOne.objects.get(id=c.data.split('|')[1])
                 count = rr.categorytwo_set.count()
                 arr = rr.categorytwo_set.all()
                 if count % 2 == 0:
                     for i in range(0, count, 2):
-                        but_1 = types.InlineKeyboardButton(text=arr[i].name, callback_data=arr[i].unic)
-                        but_2 = types.InlineKeyboardButton(text=arr[i + 1].name, callback_data=arr[i + 1].unic)
+                        but_1 = types.InlineKeyboardButton(text=arr[i].name, callback_data=f'm2|{arr[i].id}')
+                        but_2 = types.InlineKeyboardButton(text=arr[i + 1].name, callback_data=f'm2|{arr[i+1].id}')
                         menu_two.add(but_1, but_2)
                 else:
-                    but_0 = types.InlineKeyboardButton(text=arr[0].name, callback_data=arr[0].unic)
+                    but_0 = types.InlineKeyboardButton(text=arr[0].name, callback_data=f'm2|{arr[0].id}')
                     menu_two.add(but_0)
                     for i in range(1, count, 2):
-                        but_1 = types.InlineKeyboardButton(text=arr[i].name, callback_data=arr[i].unic)
-                        but_2 = types.InlineKeyboardButton(text=arr[i + 1].name, callback_data=arr[i + 1].unic)
+                        but_1 = types.InlineKeyboardButton(text=arr[i].name, callback_data=f'm2|{arr[i].id}')
+                        but_2 = types.InlineKeyboardButton(text=arr[i + 1].name, callback_data=f'm2|{arr[i+1].id}')
                         menu_two.add(but_1, but_2)
                 but_down = types.InlineKeyboardButton(text='В начало меню', callback_data='vnachalo')
                 menu_two.add(but_down)
@@ -288,36 +289,57 @@ class Command(BaseCommand):
             elif c.data == 'empty':
                 bot.answer_callback_query(c.id, text="")
             # выводим меню по ключу и добавляем статическием кнопки
-            elif CategoryTwo.objects.filter(unic=c.data).exists():
-                rr = CategoryTwo.objects.get(unic=c.data)
+            elif c.data.split('|')[0] == 'm2':
+                rr = CategoryTwo.objects.get(id=c.data.split('|')[1])
                 menu_three = types.ReplyKeyboardMarkup(True, False)
                 menu_three.row('🏠', '🍴', '🛍')
                 bot.send_message(c.message.chat.id, rr.name, reply_markup=menu_three)
                 bot.answer_callback_query(c.id, text="")
                 for i in rr.allmenu_set.all():
                     menu_category = types.InlineKeyboardMarkup()
-                    but_11 = types.InlineKeyboardButton(text='1шт-{}₽'.format(i.price),
-                                                        callback_data=i.unic)
-                    menu_category.add(but_11)
-                    bot.send_photo(c.message.chat.id, i.photo,
-                                   caption="{}\n{}\nВес: {}г".format(i.name, i.structure, i.weight),
-                                   reply_markup=menu_category)
-
+                    if i.volume is None:
+                        but_11 = types.InlineKeyboardButton(text='1шт - {} ₽'.format(i.price),
+                                                            callback_data=f'm3|{i.id}')
+                        menu_category.add(but_11)
+                        bot.send_photo(c.message.chat.id, i.photo,
+                                       caption="{}\n{}\nВес: {}г".format(i.name, i.structure, i.weight),
+                                       reply_markup=menu_category)
+                    elif i.weight is None:
+                        but_11 = types.InlineKeyboardButton(text='{}шт - {} ₽'.format(i.volume, i.price),
+                                                            callback_data=f'm3|{i.id}')
+                        menu_category.add(but_11)
+                        bot.send_photo(c.message.chat.id, i.photo,
+                                       caption="{}\n{}\nОбъем: {}шт.".format(i.name, i.structure, i.volume),
+                                       reply_markup=menu_category)
+                    else:
+                        but_11 = types.InlineKeyboardButton(text='{}шт - {} ₽'.format(i.volume, i.price),
+                                                            callback_data=f'm3|{i.id}')
+                        menu_category.add(but_11)
+                        bot.send_photo(c.message.chat.id, i.photo,
+                                       caption="{}\n{}\nОбъем: {}шт.\nВес: {}г".format(i.name, i.structure,
+                                                                                       i.volume, i.weight),
+                                       reply_markup=menu_category)
             # Обрабатываем нажатый товар ,добавляем его в корзину и добавляем инлай кнопку корзины
 
-            elif AllMenu.objects.filter(unic=c.data).exists():
-                if p.basket_set.filter(product_id=c.data).exists():
-                    p.basket_set.filter(product_id=c.data).update(count=F('count') + 1)
+            elif c.data.split('|')[0] == 'm3':
+                if p.basket_set.filter(product_id=c.data.split('|')[1]).exists():
+                    p.basket_set.filter(product_id=c.data.split('|')[1]).update(count=F('count') + 1)
                 else:
-                    object_menu = AllMenu.objects.get(unic=c.data)
+                    object_menu = AllMenu.objects.get(id=c.data.split('|')[1])
                     basket, _ = Basket.objects.get_or_create(
-                        product_id=c.data, count=1, baskUser=p, name_product=object_menu.name, photo=object_menu.photo,
-                        weight=object_menu.weight, price=object_menu.price)
+                        product_id=c.data.split('|')[1], count=1, baskUser=p, name_product=object_menu.name,
+                        photo=object_menu.photo, price=object_menu.price)
                 object_product = types.InlineKeyboardMarkup()
-                price = AllMenu.objects.get(unic=c.data).price
-                but_11 = types.InlineKeyboardButton(text='{}₽({}шт.)'.format(price,
-                                                                             p.basket_set.get(product_id=c.data).count),
-                                                    callback_data=c.data)
+                count = p.basket_set.get(product_id=c.data.split('|')[1]).count
+                dish = AllMenu.objects.get(id=c.data.split('|')[1])
+                if dish.volume is None:
+
+                    but_11 = types.InlineKeyboardButton(text='1шт - {} ₽ ({} шт.)'.format(dish.price, count),
+                                                        callback_data=c.data)
+                else:
+                    but_11 = types.InlineKeyboardButton(text='{}шт - {} ₽ ({} шт.)'.format(dish.volume, dish.price,
+                                                                                           count),
+                                                        callback_data=c.data)
                 but_12 = types.InlineKeyboardButton(text='🛍 Корзина', callback_data="Korzina")
                 object_product.add(but_11)
                 object_product.add(but_12)
@@ -718,8 +740,9 @@ class Command(BaseCommand):
                     back = types.ReplyKeyboardMarkup(True, False)
                     back.row('✅ Подтвердить и отправить')
                     back.row('🏠 Начало', '⬅️ Назад')
-                    ordering = bot.send_message(message.chat.id, f' *Данные заказа*: \nСумма заказа: {final_sum["sum"]} \n'
-                                                                 f'Покупатель: {p.nickname} \nТелефон: {p.mobile} \n'
+                    ordering = bot.send_message(message.chat.id, f' *Данные заказа*: \n'
+                                                                 f'Сумма заказа: {final_sum["sum"]} ₽\n'
+                                                                 f'Покупатель: {p.nickname} \nТелефон: {p.mobile}\n'
                                                                  f'Доставка: {p.delivery}',
                                                 reply_markup=back, parse_mode='markdown')
                     bot.register_next_step_handler(ordering, ordering_process)
@@ -766,7 +789,7 @@ class Command(BaseCommand):
                     bot.register_next_step_handler(ordering, ordering_process)
 
             else:
-                new_number = bot.send_message(message.chat.id, 'Введите корректное номер через 7')
+                new_number = bot.send_message(message.chat.id, 'Введите корректно номер через 7')
                 bot.register_next_step_handler(new_number, phone_number)
 
         def address_processing(message):
@@ -823,8 +846,16 @@ class Command(BaseCommand):
                     foods += '{} - {}шт. = {} ₽ \n'.format(i.name_product, i.count, sum_food)
                 p.orders_set.create(amount_to_pay=final_sum['sum'], type_delivery=p.delivery,
                                     address_delivery=p.address, food=foods, time_delivery=p.time_delivery)
+                bot.send_message(chat_id=Users.objects.get(id=1).name, text=f'❗️ *Вам пришел заказ*\n\n'
+                                                                            f'👤 Данные покупателя:\n'
+                                                                            f'{p.nickname}, {p.mobile}\n\n'
+                                                                            f'📦 Доставка:\n{p.delivery}\n'
+                                                                            f'Адрес: {p.address}\n'
+                                                                            f'Время: {p.time_delivery}\n\n*---*\n'
+                                                                            f'🛒  Товары:\n{foods}\n*---*\n'
+                                                                            f'*💰 Сумма заказа{final_sum["sum"]} ₽*',
+                                 parse_mode='markdown')
                 p.basket_set.all().delete()
-                print(type(message.chat.id))
                 bot.send_message(message.chat.id, 'Главное меню', reply_markup=startmenu())
             elif message.text == '⬅️ Назад':
                 if p.delivery == '🚗 Привезти':

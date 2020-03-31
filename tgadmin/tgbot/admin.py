@@ -14,7 +14,7 @@ class UsersAdmin(admin.ModelAdmin):
 
 @admin.register(Users)
 class UsersAdmin(admin.ModelAdmin):
-    list_display = ['name', 'nickname', 'mobile', 'address', 'delivery']
+    list_display = ['name', 'nickname', 'mobile', 'address', 'delivery','id']
     search_fields = ('nickname',)
 
 

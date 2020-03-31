@@ -35,12 +35,11 @@ class Orders(models.Model):
 
 
 class Basket(models.Model):
-    product_id = models.CharField(max_length=250, blank=True, null=True)
+    product_id = models.CharField(max_length=250, blank=True, null=True, db_index=True)
     count = models.IntegerField('Количество', blank=True, null=True)
     baskUser = models.ForeignKey(Users, models.CASCADE, verbose_name='Продукт пользователя')
     name_product = models.CharField('Наименование товара', max_length=250)
     photo = models.URLField('URL фото продукта')
-    weight = models.DecimalField('Вес в гр.', max_digits=7, decimal_places=0)
     price = models.DecimalField('Цена', max_digits=8, decimal_places=0, default=0)
 
     def __str__(self):
@@ -53,23 +52,21 @@ class Basket(models.Model):
 
 class CategoryOne(models.Model):
     name = models.CharField('Название кухни', max_length=250)
-    unic = models.CharField('Уникальное наименование', max_length=250, unique=True, null=True, blank=True, db_index=True)
 
     def __str__(self):
         return self.name
 
     class Meta:
-        verbose_name = 'Первая Категория'
+        verbose_name = 'Первая категория'
         verbose_name_plural = 'Первая категория'
 
 
 class CategoryTwo(models.Model):
     name = models.CharField('Наименование раздела', max_length=250)
     category_two = models.ForeignKey(CategoryOne, models.CASCADE, verbose_name='Категория-1', null=True, blank=True)
-    unic = models.CharField('Уникальное наименование',max_length=250, unique=True, null=True, blank=True, db_index=True)
 
     class Meta:
-        verbose_name = 'Вторая Категория'
+        verbose_name = 'Вторая категория'
         verbose_name_plural = 'Вторая категория'
 
     def __str__(self):
@@ -77,13 +74,13 @@ class CategoryTwo(models.Model):
 
 
 class AllMenu(models.Model):
-    name = models.CharField('Название товара',max_length=250)
-    unic = models.CharField('Уникальное наименование', max_length=250, null=True, blank=True, db_index=True)
-    structure = models.CharField('Состав', max_length=250, blank=True, null=True)
+    name = models.CharField('Название товара', max_length=250)
+    structure = models.CharField('Состав', max_length=250,)
     photo = models.URLField('URL фото продукта', blank=True, null=True)
     weight = models.DecimalField('Вес в гр.', max_digits=7, decimal_places=0, blank=True, null=True)
-    price = models.DecimalField('Цена', max_digits=8, decimal_places=0, default=0, blank=True, null=True)
-    category_two = models.ForeignKey(CategoryTwo, models.CASCADE, verbose_name='Категория-2', null=True, blank=True)
+    volume = models.PositiveSmallIntegerField('Количество в шт', null=True, blank=True)
+    price = models.DecimalField('Цена', max_digits=8, decimal_places=0, default=0)
+    category_two = models.ForeignKey(CategoryTwo, models.CASCADE, verbose_name='Категория-2')
 
     def __str__(self):
         return self.name
@@ -91,4 +88,3 @@ class AllMenu(models.Model):
     class Meta:
         verbose_name = 'Товар'
         verbose_name_plural = 'Все товары'
-
