@@ -16,6 +16,7 @@ class UsersAdmin(admin.ModelAdmin):
 class UsersAdmin(admin.ModelAdmin):
     list_display = ['name', 'nickname', 'mobile', 'address', 'delivery','id']
     search_fields = ('nickname',)
+    exclude = ['status','basket_sum']
 
 
 @admin.register(Basket)
@@ -25,7 +26,7 @@ class BasketAdmin(admin.ModelAdmin):
 
 @admin.register(AllMenu)
 class AssortmentAdmin(admin.ModelAdmin):
-    list_display = ['name', 'structure', 'photo', 'price', 'weight', 'category_two']
+    list_display = ['name', 'structure', 'photo', 'price', 'weight','volume', 'category_two']
     search_fields = ('category_two__name', 'name',)
     ordering = ('category_two',)
     list_filter = ('category_two',)

@@ -8,6 +8,8 @@ class Users(models.Model):
     address = models.TextField('Адрес', blank=True, null=True)
     delivery = models.CharField('Тип доставки', max_length=15, default='🚗 Привезти')
     time_delivery = models.CharField('Время доставки', max_length=20, default='Как можно скорее')
+    status = models.CharField(max_length=1, default='1')
+    basket_sum = models.PositiveIntegerField(default=0)
 
     def __str__(self):
         return '{}'.format(self.nickname)
