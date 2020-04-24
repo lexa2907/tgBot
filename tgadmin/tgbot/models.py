@@ -80,7 +80,7 @@ class AllMenu(models.Model):
     structure = models.CharField('Состав', max_length=250,)
     photo = models.URLField('URL фото продукта', blank=True, null=True)
     weight = models.DecimalField('Вес в гр.', max_digits=7, decimal_places=0, blank=True, null=True)
-    volume = models.PositiveSmallIntegerField('Количество в шт', null=True, blank=True)
+    volume = models.PositiveSmallIntegerField('Количество-шт(Пицца-см)', null=True, blank=True)
     price = models.DecimalField('Цена', max_digits=8, decimal_places=0, default=0)
     category_two = models.ForeignKey(CategoryTwo, models.CASCADE, verbose_name='Категория-2')
 

@@ -35,7 +35,7 @@ class AssortmentAdmin(admin.ModelAdmin):
 @admin.register(CategoryTwo)
 class CategoryAdmin(admin.ModelAdmin):
     list_display = ['name', 'category_two']
-    search_fields = ('name','category_two__name',)
+    search_fields = ('name', 'category_two__name',)
     ordering = ('category_two',)
     list_filter = ('category_two',)
 
