@@ -84,7 +84,9 @@ class Command(BaseCommand):
                 bot.send_message(message.chat.id, text='Вы еще не заказывали')
 
         def update_sum(message):
-            if message.text.isdigit():
+            if message.text == '🏠 Начало':
+                startpg(message)
+            elif message.text.isdigit():
                 bot.clear_step_handler_by_chat_id(chat_id=message.chat.id)
                 min_sum = {'max_sum': int(message.text)}
                 new_min_sum = json.dumps(min_sum, ensure_ascii=False)
@@ -105,6 +107,68 @@ class Command(BaseCommand):
                 with open('data.json', 'w', encoding="utf-8") as f:
                     f.write(new_news)
                 bot.send_message(message.chat.id, 'Вы обновили новость успешно', reply_markup=startmenu())
+
+        @bot.message_handler(commands=['start'])
+        def startpg(message):
+            p, _ = Users.objects.get_or_create(name=message.chat.id,
+                                               defaults={'nickname': message.from_user.first_name})
+            bot.send_message(message.chat.id, 'Добро пожаловать!', reply_markup=startmenu())
+
+        @bot.message_handler(commands=['cart'])
+        def commands_cart(message):
+            p = Users.objects.get(name=message.chat.id)
+            preparing_the_bucket(p, message)
+
+        @bot.message_handler(commands=['menu'])
+        def commands_menu(message):
+            back = types.ReplyKeyboardMarkup(True, False)
+            back.row('🏠 Начало')
+            bot.send_message(message.chat.id, 'Меню', reply_markup=back)
+            bot.send_message(message.chat.id, 'Выберите раздел, чтобы вывести список блюд:', reply_markup=menu())
+
+        @bot.message_handler(commands=['history'])
+        def commands_history(message):
+            p = Users.objects.get(name=message.chat.id)
+            withdrawal_of_orders(p, message)
+
+        @bot.message_handler(commands=['settings'])
+        def commands_settings(message):
+            back = types.ReplyKeyboardMarkup(True, False)
+            back.row('Имя', 'Моб.', 'Адрес')
+            back.row('🏠 Начало')
+            bot.send_message(message.chat.id, 'Ваши настройки:', reply_markup=back)
+
+        @bot.message_handler(commands=['news'])
+        def commands_news(message):
+            with open('data.json', "r", encoding="utf-8") as file:
+                f = json.load(file)
+            back = types.ReplyKeyboardMarkup(True, False)
+            back.row('🏠 Начало')
+            bot.send_message(message.chat.id, f'{f["news"]}', reply_markup=back, parse_mode='markdown')
+
+        @bot.message_handler(commands=['admin_min_sum'])
+        def update_min_sum(message):
+            if Users.objects.get(id=1).name == int(message.chat.id):
+                back = types.ReplyKeyboardMarkup(True, False)
+                back.row('🏠 Начало')
+                with open('sum.json', 'r') as f:
+                    max_sum = json.load(f)
+                new_min_sum = bot.send_message(message.chat.id, f'Введите минимальную сумму для заказов:\n'
+                                                                f'Сейчас: {max_sum["max_sum"]} ₽',
+                                               reply_markup=back)
+                bot.register_next_step_handler(new_min_sum, update_sum)
+
+        @bot.message_handler(commands=['admin_news'])
+        def update_news(message):
+            if Users.objects.get(id=1).name == int(message.chat.id):
+                back = types.ReplyKeyboardMarkup(True, False)
+                back.row('🏠 Начало')
+                new_news = bot.send_message(message.chat.id, 'Для встроенной ссылки в слово используйте\n'
+                                                             '[ ваш текст](ваша ссылка).\nДля выделения <b>жирным</b>\n'
+                                                             '*ваш текст*\n'
+                                                             'Для  текста с <i>наклоном</i>\n_ваш текст_ ',
+                                            reply_markup=back, parse_mode='html')
+                bot.register_next_step_handler(new_news, changing_the_news)
 
         @bot.message_handler(func=lambda message: Users.objects.get(name=message.chat.id).status == '2')
         def choice_of_delivery(message):
@@ -1057,66 +1121,6 @@ class Command(BaseCommand):
                                          reply_markup=back)
                 bot.register_next_step_handler(error, ordering_process)
 
-        @bot.message_handler(commands=['start'])
-        def startpg(message):
-            p, _ = Users.objects.get_or_create(name=message.chat.id,
-                                               defaults={'nickname': message.from_user.first_name})
-            bot.send_message(message.chat.id, 'Добро пожаловать!', reply_markup=startmenu())
 
-        @bot.message_handler(commands=['cart'])
-        def commands_cart(message):
-            p = Users.objects.get(name=message.chat.id)
-            preparing_the_bucket(p, message)
-
-        @bot.message_handler(commands=['menu'])
-        def commands_menu(message):
-            back = types.ReplyKeyboardMarkup(True, False)
-            back.row('🏠 Начало')
-            bot.send_message(message.chat.id, 'Меню', reply_markup=back)
-            bot.send_message(message.chat.id, 'Выберите раздел, чтобы вывести список блюд:', reply_markup=menu())
-
-        @bot.message_handler(commands=['history'])
-        def commands_history(message):
-            p = Users.objects.get(name=message.chat.id)
-            withdrawal_of_orders(p, message)
-
-        @bot.message_handler(commands=['settings'])
-        def commands_settings(message):
-            back = types.ReplyKeyboardMarkup(True, False)
-            back.row('Имя', 'Моб.', 'Адрес')
-            back.row('🏠 Начало')
-            bot.send_message(message.chat.id, 'Ваши настройки:', reply_markup=back)
-
-        @bot.message_handler(commands=['news'])
-        def commands_news(message):
-            with open('data.json', "r", encoding="utf-8") as file:
-                f = json.load(file)
-            back = types.ReplyKeyboardMarkup(True, False)
-            back.row('🏠 Начало')
-            bot.send_message(message.chat.id, f'{f["news"]}', reply_markup=back, parse_mode='markdown')
-
-        @bot.message_handler(commands=['admin_min_sum'])
-        def update_min_sum(message):
-            if Users.objects.get(id=1).name == int(message.chat.id):
-                back = types.ReplyKeyboardMarkup(True, False)
-                back.row('🏠 Начало')
-                with open('sum.json', 'r') as f:
-                    max_sum = json.load(f)
-                new_min_sum = bot.send_message(message.chat.id, f'Введите минимальную сумму для заказов:\n'
-                                                                f'Сейчас: {max_sum["max_sum"]} ₽',
-                                               reply_markup=back)
-                bot.register_next_step_handler(new_min_sum, update_sum)
-
-        @bot.message_handler(commands=['admin_news'])
-        def update_news(message):
-            if Users.objects.get(id=1).name == int(message.chat.id):
-                back = types.ReplyKeyboardMarkup(True, False)
-                back.row('🏠 Начало')
-                new_news = bot.send_message(message.chat.id, 'Для встроенной ссылки в слово используйте\n'
-                                                             '[ ваш текст](ваша ссылка).\nДля выделения <b>жирным</b>\n'
-                                                             '*ваш текст*\n'
-                                                             'Для  текста с <i>наклоном</i>\n_ваш текст_ ',
-                                            reply_markup=back, parse_mode='html')
-                bot.register_next_step_handler(new_news, changing_the_news)
 
         bot.polling(none_stop=True)

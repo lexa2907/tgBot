@@ -4,3 +4,4 @@ tgadmin/mydatabase
 settings.py
 venv
 static 
+__pycache__
