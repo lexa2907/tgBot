@@ -4,11 +4,11 @@ from django.db import models
 class Users(models.Model):
     name = models.PositiveIntegerField('id_пользователя', unique=True)
     nickname = models.CharField('има пользователя', max_length=100)
-    mobile = models.CharField('Телефон', max_length=11, blank=True, null=True)
+    mobile = models.CharField('Телефон', max_length=20, blank=True, null=True)
     address = models.TextField('Адрес', blank=True, null=True)
     delivery = models.CharField('Тип доставки', max_length=15, default='🚗 Привезти')
     time_delivery = models.CharField('Время доставки', max_length=20, default='Как можно скорее')
-    status = models.CharField(max_length=1, default='1')
+    status = models.CharField(max_length=5, default='1')
     basket_sum = models.PositiveIntegerField(default=0)
 
     def __str__(self):
@@ -77,12 +77,13 @@ class CategoryTwo(models.Model):
 
 class AllMenu(models.Model):
     name = models.CharField('Название товара', max_length=250)
-    structure = models.CharField('Состав', max_length=250,)
+    structure = models.CharField('Состав', max_length=250)
     photo = models.URLField('URL фото продукта', blank=True, null=True)
     weight = models.DecimalField('Вес в гр.', max_digits=7, decimal_places=0, blank=True, null=True)
     volume = models.PositiveSmallIntegerField('Количество-шт(Пицца-см)', null=True, blank=True)
     price = models.DecimalField('Цена', max_digits=8, decimal_places=0, default=0)
-    category_two = models.ForeignKey(CategoryTwo, models.CASCADE, verbose_name='Категория-2')
+    category_two = models.ForeignKey(CategoryTwo, models.CASCADE, verbose_name='Категория-2', null=True, blank=True)
+    category_one = models.ForeignKey(CategoryOne, models.CASCADE, verbose_name='Категория-1', null=True, blank=True)
 
     def __str__(self):
         return self.name
@@ -90,3 +91,19 @@ class AllMenu(models.Model):
     class Meta:
         verbose_name = 'Товар'
         verbose_name_plural = 'Все товары'
+
+
+class Configuration(models.Model):
+    min_sum = models.DecimalField('Минимальная сумма заказа в ₽', max_digits=4, decimal_places=0, default=0)
+    channel_orders = models.CharField('название канала для приема заказов', max_length=30, default='не указан')
+    channel_help = models.CharField('название канала для обратной связи', max_length=30, default='не указан')
+    id_channel_orders = models.CharField('Id канала для приема заказов', max_length=20, default='нет')
+    id_channel_help = models.CharField('Id канала для обратной связи', max_length=20, default='нет')
+    news = models.TextField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = 'Конфигурация бота'
+        verbose_name_plural = 'Конфигурация бота'
+
+    def __str__(self):
+        return 'Настройки'
