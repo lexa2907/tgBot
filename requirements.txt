@@ -3,7 +3,7 @@ chardet==3.0.4
 Django==2.2.9
 django-js-asset==1.2.2
 idna==2.8
-Pillow==7.0.0
+Pillow==8.2.0
 psycopg2==2.8.4
 PySocks==1.7.1
 pyTelegramBotAPI==3.6.6
